@@ -160,7 +160,7 @@ func (s *Store) GetTrainerAvailability(trainerID int, from, to time.Time) (*[]mo
 		return nil, err
 	}
 
-	var timeslots []models.Timeslot
+	timeslots := make([]models.Timeslot, 0)
 	currAppIdx := 0
 
 	for date := from; date.Before(to); date = date.Add(24 * time.Hour) {
