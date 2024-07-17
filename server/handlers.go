@@ -54,3 +54,34 @@ func (s *APIServer) handlePostAppointment(c echo.Context) error {
 
 	return c.JSON(http.StatusCreated, res)
 }
+
+func (s *APIServer) handleGetTrainerAppointments(c echo.Context) error {
+	req := new(GetTrainerAppointmentsReq)
+	logger := GetEchoLogger(c)
+
+	if err := c.Bind(req); err != nil {
+		logger.Error().Err(err).Msg("Failed to bind request")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if err := c.Validate(req); err != nil {
+		logger.Error().Err(err).Msg("Failed to validate request")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	parsedFrom, _ := models.ParseDateStr(req.From)
+	parsedTo, _ := models.ParseDateStr(req.To)
+
+	appointments, err := s.store.GetAppointmentsByTrainerID(
+		req.TrainerID,
+		parsedFrom,
+		parsedTo,
+	)
+
+	if err != nil {
+		logger.Error().Err(err).Msg("Failed to get appointments")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, appointments)
+}

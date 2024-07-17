@@ -22,6 +22,7 @@ func NewCustomValidator() *CustomValidator {
 	trans, _ := uni.GetTranslator("en")
 
 	validate := validator.New()
+	validate.RegisterStructValidation(AppointmentFromToValidation, GetTrainerAppointmentsReq{})
 	validate.RegisterValidation("is-future-date", ValidateFutureDate)
 
 	en_translations.RegisterDefaultTranslations(validate, trans)
@@ -30,6 +31,20 @@ func NewCustomValidator() *CustomValidator {
 		return ut.Add("is-future-date", "{0} must be a future date", true)
 	}, func(ut ut.Translator, fe validator.FieldError) string {
 		t, _ := ut.T("is-future-date", fe.Field())
+		return t
+	})
+
+	validate.RegisterTranslation("timeframe-invalid", trans, func(ut ut.Translator) error {
+		return ut.Add("timeframe-invalid", "Invalid timeframe", true)
+	}, func(ut ut.Translator, fe validator.FieldError) string {
+		t, _ := ut.T("timeframe-invalid", fe.Field())
+		return t
+	})
+
+	validate.RegisterTranslation("timeframe-max", trans, func(ut ut.Translator) error {
+		return ut.Add("timeframe-max", "Timeframe must be 90 days or lower", true)
+	}, func(ut ut.Translator, fe validator.FieldError) string {
+		t, _ := ut.T("timeframe-max", fe.Field())
 		return t
 	})
 
@@ -63,4 +78,32 @@ func ValidateFutureDate(fl validator.FieldLevel) bool {
 		return false
 	}
 	return parsedDate.After(time.Now())
+}
+
+type GetTrainerAppointmentsReq struct {
+	TrainerID int    `param:"trainer_id" validate:"required,min=1"`
+	From      string `query:"from" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
+	To        string `query:"to" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
+}
+
+func AppointmentFromToValidation(sl validator.StructLevel) {
+	req := sl.Current().Interface().(GetTrainerAppointmentsReq)
+
+	parsedFrom, err := time.Parse(time.RFC3339, req.From)
+	if err != nil {
+		sl.ReportError(parsedFrom, "from", "From", "datetime", "")
+	}
+
+	parsedTo, err := time.Parse(time.RFC3339, req.To)
+	if err != nil {
+		sl.ReportError(parsedTo, "to", "To", "datetime", "")
+	}
+
+	if parsedFrom.After(parsedTo) {
+		sl.ReportError(parsedFrom, "from", "From", "timeframe-invalid", "")
+	}
+
+	if parsedTo.Sub(parsedFrom) > 90*24*time.Hour {
+		sl.ReportError(parsedTo, "to", "To", "timeframe-max", "")
+	}
 }

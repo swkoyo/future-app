@@ -6,10 +6,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCustomValidator(t *testing.T) {
+func TestPostAppointmentReqValidator(t *testing.T) {
 	cv := NewCustomValidator()
 
-	t.Run("PostAppointmentReq Valid Input", func(t *testing.T) {
+	t.Run("Valid Input", func(t *testing.T) {
 		req := PostAppointmentReq{
 			UserID:    1,
 			TrainerID: 1,
@@ -20,7 +20,7 @@ func TestCustomValidator(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("PostAppointmentReq Invalid UserID", func(t *testing.T) {
+	t.Run("Invalid UserID", func(t *testing.T) {
 		req := PostAppointmentReq{
 			UserID:    -1,
 			TrainerID: 1,
@@ -32,7 +32,7 @@ func TestCustomValidator(t *testing.T) {
 		assert.Equal(t, "UserID must be 1 or greater", err.Error())
 	})
 
-	t.Run("PostAppointmentReq Invalid TrainerID", func(t *testing.T) {
+	t.Run("Invalid TrainerID", func(t *testing.T) {
 		req := PostAppointmentReq{
 			UserID:    1,
 			TrainerID: -1,
@@ -44,7 +44,7 @@ func TestCustomValidator(t *testing.T) {
 		assert.Equal(t, "TrainerID must be 1 or greater", err.Error())
 	})
 
-	t.Run("PostAppointmentReq Invalid Date Format", func(t *testing.T) {
+	t.Run("Invalid Date Format", func(t *testing.T) {
 		req := PostAppointmentReq{
 			UserID:    1,
 			TrainerID: 1,
@@ -54,5 +54,30 @@ func TestCustomValidator(t *testing.T) {
 		err := cv.Validate(req)
 		assert.Error(t, err)
 		assert.Equal(t, "StartedAt does not match the 2006-01-02T15:04:05Z07:00 format", err.Error())
+	})
+}
+
+func TestGetTrainerAppointmentsReqValidator(t *testing.T) {
+	cv := NewCustomValidator()
+
+	t.Run("Valid Input", func(t *testing.T) {
+		req := GetTrainerAppointmentsReq{
+			TrainerID: 1,
+			From:      "2030-07-08T20:00:00Z",
+			To:        "2030-07-09T20:00:00Z",
+		}
+		err := cv.Validate(req)
+		assert.NoError(t, err)
+	})
+
+	t.Run("Invalid Timeframe", func(t *testing.T) {
+		req := GetTrainerAppointmentsReq{
+			TrainerID: 1,
+			From:      "2030-07-08T20:00:00Z",
+			To:        "2030-10-09T20:00:00Z",
+		}
+		err := cv.Validate(req)
+		assert.Error(t, err)
+		assert.Equal(t, "Timeframe must be 90 days or lower", err.Error())
 	})
 }

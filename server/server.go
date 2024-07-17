@@ -31,6 +31,7 @@ func NewAPIServer(port string, store *s.Store) *APIServer {
 	})
 
 	e.POST("/appointments", s.handlePostAppointment)
+	e.GET("/trainers/:trainer_id/appointments", s.handleGetTrainerAppointments)
 
 	return s
 }

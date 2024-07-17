@@ -93,3 +93,61 @@ func TestValidateAvailableTimeslot(t *testing.T) {
 		assert.Equal(t, "Timeslot is not available", err.Error())
 	})
 }
+
+func TestGetAppointmentsByTrainerID(t *testing.T) {
+	store, err := setupStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+
+	appointment := getTestAppointment()
+
+	// INFO: Create test appointment
+	createdAppointment, err := store.CreateAppointment(appointment)
+	assert.NoError(t, err)
+	assert.NotNil(t, createdAppointment)
+
+	t.Run("Appointment within timeframe", func(t *testing.T) {
+		appointments, err := store.GetAppointmentsByTrainerID(1, appointment.StartedAt.Add(-time.Hour), appointment.EndedAt.Add(time.Hour))
+		assert.NoError(t, err)
+		assert.NotNil(t, appointments)
+		assert.Len(t, appointments, 1)
+		t.Log(appointments)
+		assert.Equal(t, createdAppointment.ID, appointments[0].ID)
+		assert.Equal(t, createdAppointment.UserID, appointments[0].UserID)
+		assert.Equal(t, createdAppointment.TrainerID, appointments[0].TrainerID)
+		assert.Equal(t, createdAppointment.StartedAt, appointments[0].StartedAt)
+		assert.Equal(t, createdAppointment.EndedAt, appointments[0].EndedAt)
+	})
+
+	t.Run("Appointment overlaps timeframe start", func(t *testing.T) {
+		appointments, err := store.GetAppointmentsByTrainerID(1, appointment.StartedAt.Add(time.Minute*15), appointment.EndedAt.Add(time.Hour))
+		assert.NoError(t, err)
+		assert.NotNil(t, appointments)
+		assert.Len(t, appointments, 1)
+		assert.Equal(t, createdAppointment.ID, appointments[0].ID)
+	})
+
+	t.Run("Appointment overlaps timeframe end", func(t *testing.T) {
+		appointments, err := store.GetAppointmentsByTrainerID(1, appointment.StartedAt.Add(-time.Hour), appointment.EndedAt.Add(-time.Minute*15))
+		assert.NoError(t, err)
+		assert.NotNil(t, appointments)
+		assert.Len(t, appointments, 1)
+		assert.Equal(t, createdAppointment.ID, appointments[0].ID)
+	})
+
+	t.Run("Get trainer with no appointments", func(t *testing.T) {
+		appointments, err := store.GetAppointmentsByTrainerID(2, appointment.StartedAt.Add(-time.Hour), appointment.EndedAt.Add(time.Hour))
+		assert.NoError(t, err)
+		assert.NotNil(t, appointments)
+		assert.Len(t, appointments, 0)
+	})
+
+	t.Run("Get trainer with no appointments within timeframe", func(t *testing.T) {
+		appointments, err := store.GetAppointmentsByTrainerID(1, appointment.EndedAt.Add(time.Hour), appointment.EndedAt.Add(time.Hour*2))
+		assert.NoError(t, err)
+		assert.NotNil(t, appointments)
+		assert.Len(t, appointments, 0)
+	})
+}

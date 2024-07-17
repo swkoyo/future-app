@@ -108,3 +108,48 @@ func (s *Store) ValidateAvailableTimeslot(data *models.Appointment) error {
 
 	return nil
 }
+
+func (s *Store) GetAppointmentsByTrainerID(trainerID int, from, to time.Time) ([]*models.Appointment, error) {
+	appointments := make([]*models.Appointment, 0)
+	query := `
+	SELECT id, user_id, trainer_id, started_at, ended_at
+	FROM appointments
+	WHERE trainer_id = $1
+	AND (
+		(started_at >= $2 AND started_at <= $3)
+		OR (ended_at >= $2 AND ended_at <= $3)
+		OR (started_at >= $2 AND ended_at <= $3)
+	)
+	ORDER BY started_at ASC
+	`
+	rows, err := s.DB.Query(
+		query,
+		trainerID,
+		from.Format(time.RFC3339),
+		to.Format(time.RFC3339),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var appointment models.Appointment
+		if err := rows.Scan(
+			&appointment.ID,
+			&appointment.UserID,
+			&appointment.TrainerID,
+			&appointment.StartedAt,
+			&appointment.EndedAt,
+		); err != nil {
+			return nil, err
+		}
+
+		appointment.StartedAt = models.ConvertToFixedTZ(appointment.StartedAt)
+		appointment.EndedAt = models.ConvertToFixedTZ(appointment.EndedAt)
+
+		appointments = append(appointments, &appointment)
+	}
+
+	return appointments, nil
+}
