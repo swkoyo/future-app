@@ -1,6 +1,8 @@
 package server
 
 import (
+	"encoding/json"
+	"future-app/models"
 	"future-app/store"
 	"net/http"
 	"net/http/httptest"
@@ -171,6 +173,116 @@ func TestGetTrainerAppointments(t *testing.T) {
 		if assert.NoError(t, apiServer.handleGetTrainerAppointments(c)) {
 			assert.Equal(t, http.StatusOK, rec.Code)
 			assert.JSONEq(t, `[]`, rec.Body.String())
+		}
+	})
+}
+
+func TestGetTrainerAvailability(t *testing.T) {
+	err := setup()
+	if err != nil {
+		t.Fatalf("failed to setup test: %v", err)
+	}
+	defer teardown()
+
+	e := apiServer.echo
+
+	t.Run("Invalid date format", func(t *testing.T) {
+		q := make(url.Values)
+		q.Set("from", "2020-07-01")
+		q.Set("to", "2020-10-01")
+		req := httptest.NewRequest(http.MethodGet, "/trainers/1/availability?"+q.Encode(), nil)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.SetPath("/trainers/:trainer_id/availability")
+		c.SetParamNames("trainer_id")
+		c.SetParamValues("1")
+
+		if err := apiServer.handleGetTrainerAppointments(c); assert.NotNil(t, err) {
+			he, ok := err.(*echo.HTTPError)
+			if ok {
+				assert.Equal(t, http.StatusBadRequest, he.Code)
+			}
+		}
+	})
+
+	t.Run("Invalid timeframe (from after to)", func(t *testing.T) {
+		q := make(url.Values)
+		q.Set("from", "2030-07-08T00:00:00Z")
+		q.Set("to", "2030-07-05T00:00:00Z")
+		req := httptest.NewRequest(http.MethodGet, "/trainers/1/availability?"+q.Encode(), nil)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.SetPath("/trainers/:trainer_id/availability")
+		c.SetParamNames("trainer_id")
+		c.SetParamValues("1")
+
+		if err := apiServer.handleGetTrainerAvailability(c); assert.NotNil(t, err) {
+			he, ok := err.(*echo.HTTPError)
+			if ok {
+				assert.Equal(t, http.StatusBadRequest, he.Code)
+			}
+		}
+	})
+
+	t.Run("Invalid timeframe (more than 90 days)", func(t *testing.T) {
+		q := make(url.Values)
+		q.Set("from", "2030-07-01T00:00:00Z")
+		q.Set("to", "2030-10-01T00:00:00Z")
+		req := httptest.NewRequest(http.MethodGet, "/trainers/1/availability?"+q.Encode(), nil)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.SetPath("/trainers/:trainer_id/availability")
+		c.SetParamNames("trainer_id")
+		c.SetParamValues("1")
+
+		if err := apiServer.handleGetTrainerAvailability(c); assert.NotNil(t, err) {
+			he, ok := err.(*echo.HTTPError)
+			if ok {
+				assert.Equal(t, http.StatusBadRequest, he.Code)
+			}
+		}
+	})
+
+	t.Run("Invalid timeframe (in past)", func(t *testing.T) {
+		q := make(url.Values)
+		q.Set("from", "2020-07-01T00:00:00Z")
+		q.Set("to", "2020-09-29T00:00:00Z")
+		req := httptest.NewRequest(http.MethodGet, "/trainers/1/availability?"+q.Encode(), nil)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.SetPath("/trainers/:trainer_id/availability")
+		c.SetParamNames("trainer_id")
+		c.SetParamValues("1")
+
+		if err := apiServer.handleGetTrainerAvailability(c); assert.NotNil(t, err) {
+			he, ok := err.(*echo.HTTPError)
+			if ok {
+				assert.Equal(t, http.StatusBadRequest, he.Code)
+			}
+		}
+	})
+
+	t.Run("Valid timeframe (tz updated to PST -8)", func(t *testing.T) {
+		q := make(url.Values)
+		q.Set("from", "2030-07-08T20:00:00Z")
+		q.Set("to", "2030-07-09T20:00:00Z")
+		req := httptest.NewRequest(http.MethodGet, "/trainers/1/availability?"+q.Encode(), nil)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.SetPath("/trainers/:trainer_id/availability")
+		c.SetParamNames("trainer_id")
+		c.SetParamValues("1")
+
+		if assert.NoError(t, apiServer.handleGetTrainerAvailability(c)) {
+			assert.Equal(t, http.StatusOK, rec.Code)
+
+			var timeslots []models.Timeslot
+			err := json.Unmarshal(rec.Body.Bytes(), &timeslots)
+			if assert.NoError(t, err) && assert.NotEmpty(t, timeslots) {
+				timeFormat := "2006-01-02T15:04:05-07:00"
+				assert.Equal(t, "2030-07-08T08:00:00-08:00", timeslots[0].StartedAt.Format(timeFormat))
+				assert.Equal(t, "2030-07-08T17:00:00-08:00", timeslots[len(timeslots)-1].EndedAt.Format(timeFormat))
+			}
 		}
 	})
 }

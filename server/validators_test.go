@@ -81,3 +81,18 @@ func TestGetTrainerAppointmentsReqValidator(t *testing.T) {
 		assert.Equal(t, "Timeframe must be 90 days or lower", err.Error())
 	})
 }
+
+func TestGetTrainerAvailabiliyReqValidator(t *testing.T) {
+	cv := NewCustomValidator()
+
+	t.Run("Invalid From Date", func(t *testing.T) {
+		req := GetTrainerAvailabilityReq{
+			TrainerID: 1,
+			From:      "2019-07-08T20:00:00Z",
+			To:        "2030-07-08T20:30:00Z",
+		}
+		err := cv.Validate(req)
+		assert.Error(t, err)
+		assert.Equal(t, "From must be a future date", err.Error())
+	})
+}

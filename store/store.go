@@ -153,3 +153,36 @@ func (s *Store) GetAppointmentsByTrainerID(trainerID int, from, to time.Time) ([
 
 	return appointments, nil
 }
+
+func (s *Store) GetTrainerAvailability(trainerID int, from, to time.Time) (*[]models.Timeslot, error) {
+	appointments, err := s.GetAppointmentsByTrainerID(trainerID, from, to)
+	if err != nil {
+		return nil, err
+	}
+
+	var timeslots []models.Timeslot
+	currAppIdx := 0
+
+	for date := from; date.Before(to); date = date.Add(24 * time.Hour) {
+		if date.Weekday() == time.Saturday || date.Weekday() == time.Sunday {
+			continue
+		}
+
+		currentDate := time.Date(date.Year(), date.Month(), date.Day(), 8, 0, 0, 0, date.Location())
+
+		for currentDate.Before(time.Date(date.Year(), date.Month(), date.Day(), 17, 0, 0, 0, date.Location())) {
+			if currAppIdx < len(appointments) && appointments[currAppIdx].StartedAt.Equal(currentDate) && appointments[currAppIdx].EndedAt.Equal(currentDate.Add(30*time.Minute)) {
+				currentDate = appointments[currAppIdx].EndedAt
+				currAppIdx += 1
+				continue
+			}
+
+			timeslot := models.NewTimeslot(currentDate, currentDate.Add(30*time.Minute))
+
+			timeslots = append(timeslots, timeslot)
+			currentDate = currentDate.Add(30 * time.Minute)
+		}
+	}
+
+	return &timeslots, nil
+}

@@ -113,7 +113,6 @@ func TestGetAppointmentsByTrainerID(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, appointments)
 		assert.Len(t, appointments, 1)
-		t.Log(appointments)
 		assert.Equal(t, createdAppointment.ID, appointments[0].ID)
 		assert.Equal(t, createdAppointment.UserID, appointments[0].UserID)
 		assert.Equal(t, createdAppointment.TrainerID, appointments[0].TrainerID)
@@ -149,5 +148,78 @@ func TestGetAppointmentsByTrainerID(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, appointments)
 		assert.Len(t, appointments, 0)
+	})
+}
+
+func TestGetTrainerAvailability(t *testing.T) {
+	store, err := setupStore()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer store.Close()
+
+	tz := time.FixedZone(models.GLOBAL_TZ, models.GLOBAL_TZ_OFFSET)
+	from := time.Date(2030, 7, 5, 0, 0, 0, 0, tz) // Friday midnight
+	to := time.Date(2030, 7, 8, 0, 0, 0, 0, tz)   // Monday midnight
+
+	t.Run("Trainer with no appointments", func(t *testing.T) {
+		timeslots, err := store.GetTrainerAvailability(1, from, to)
+		assert.NoError(t, err)
+		assert.NotNil(t, timeslots)
+		assert.NotZero(t, len(*timeslots))
+
+		// INFO: Timeslots are in order
+		for i := 1; i < len(*timeslots); i++ {
+			assert.True(t, (*timeslots)[i].StartedAt.After((*timeslots)[i-1].StartedAt))
+		}
+
+		for _, timeslot := range *timeslots {
+			// INFO: Timeslot is between from and to
+			assert.True(t, timeslot.StartedAt.After(from) || timeslot.StartedAt.Equal(from))
+			assert.True(t, timeslot.EndedAt.Before(to) || timeslot.EndedAt.Equal(to))
+
+			// INFO: Timeslot is not on Saturday or Sunday
+			assert.NotEqual(t, time.Saturday, timeslot.StartedAt.Weekday())
+			assert.NotEqual(t, time.Saturday, timeslot.EndedAt.Weekday())
+			assert.NotEqual(t, time.Sunday, timeslot.StartedAt.Weekday())
+			assert.NotEqual(t, time.Sunday, timeslot.EndedAt.Weekday())
+
+			// INFO: Timeslot is between 8am and 5pm
+			assert.True(t, timeslot.StartedAt.Hour() >= 8 && timeslot.StartedAt.Hour() < 17)
+			assert.True(t, timeslot.EndedAt.Hour() >= 8 && timeslot.EndedAt.Hour() <= 17)
+
+			// INFO: Timeslot is on the hour or half hour
+			assert.True(t, timeslot.StartedAt.Minute() == 0 || timeslot.StartedAt.Minute() == 30)
+			assert.True(t, timeslot.EndedAt.Minute() == 0 || timeslot.EndedAt.Minute() == 30)
+
+			// INFO: Timesolt is 30 minutes long
+			assert.Equal(t, timeslot.EndedAt.Sub(timeslot.StartedAt), time.Minute*30)
+		}
+	})
+
+	t.Run("Trainer with appointments", func(t *testing.T) {
+		// INFO: Get initial availability
+		timeslots, err := store.GetTrainerAvailability(1, from, to)
+		assert.NoError(t, err)
+		assert.NotNil(t, timeslots)
+		assert.NotZero(t, len(*timeslots))
+
+		// INFO: Create appointment on first timeslot
+		createdAppointment, err := store.CreateAppointment(&models.Appointment{
+			UserID:    1,
+			TrainerID: 1,
+			StartedAt: (*timeslots)[0].StartedAt,
+			EndedAt:   (*timeslots)[0].EndedAt,
+		})
+		assert.NoError(t, err)
+		assert.NotNil(t, createdAppointment)
+
+		// INFO: Get updated availability
+		updatedTimeslots, err := store.GetTrainerAvailability(1, from, to)
+		assert.NoError(t, err)
+		assert.NotNil(t, updatedTimeslots)
+		assert.Len(t, *updatedTimeslots, len(*timeslots)-1)
+		assert.NotEqual(t, (*timeslots)[0].StartedAt, (*updatedTimeslots)[0].StartedAt)
+		assert.NotEqual(t, (*timeslots)[0].EndedAt, (*updatedTimeslots)[0].EndedAt)
 	})
 }

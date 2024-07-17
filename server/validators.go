@@ -23,6 +23,7 @@ func NewCustomValidator() *CustomValidator {
 
 	validate := validator.New()
 	validate.RegisterStructValidation(AppointmentFromToValidation, GetTrainerAppointmentsReq{})
+	validate.RegisterStructValidation(AvailabilityFromToValidation, GetTrainerAvailabilityReq{})
 	validate.RegisterValidation("is-future-date", ValidateFutureDate)
 
 	en_translations.RegisterDefaultTranslations(validate, trans)
@@ -88,6 +89,34 @@ type GetTrainerAppointmentsReq struct {
 
 func AppointmentFromToValidation(sl validator.StructLevel) {
 	req := sl.Current().Interface().(GetTrainerAppointmentsReq)
+
+	parsedFrom, err := time.Parse(time.RFC3339, req.From)
+	if err != nil {
+		sl.ReportError(parsedFrom, "from", "From", "datetime", "")
+	}
+
+	parsedTo, err := time.Parse(time.RFC3339, req.To)
+	if err != nil {
+		sl.ReportError(parsedTo, "to", "To", "datetime", "")
+	}
+
+	if parsedFrom.After(parsedTo) {
+		sl.ReportError(parsedFrom, "from", "From", "timeframe-invalid", "")
+	}
+
+	if parsedTo.Sub(parsedFrom) > 90*24*time.Hour {
+		sl.ReportError(parsedTo, "to", "To", "timeframe-max", "")
+	}
+}
+
+type GetTrainerAvailabilityReq struct {
+	TrainerID int    `param:"trainer_id" validate:"required,min=1"`
+	From      string `query:"from" validate:"required,datetime=2006-01-02T15:04:05Z07:00,is-future-date"`
+	To        string `query:"to" validate:"required,datetime=2006-01-02T15:04:05Z07:00,is-future-date"`
+}
+
+func AvailabilityFromToValidation(sl validator.StructLevel) {
+	req := sl.Current().Interface().(GetTrainerAvailabilityReq)
 
 	parsedFrom, err := time.Parse(time.RFC3339, req.From)
 	if err != nil {

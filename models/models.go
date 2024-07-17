@@ -68,3 +68,15 @@ func NewAppointment(userID, trainerID int, startedAt, endedAt time.Time) (*Appoi
 		EndedAt:   endedAt,
 	}, nil
 }
+
+type Timeslot struct {
+	StartedAt time.Time `json:"started_at"`
+	EndedAt   time.Time `json:"ended_at"`
+}
+
+func NewTimeslot(startedAt, endedAt time.Time) Timeslot {
+	return Timeslot{
+		StartedAt: ConvertToFixedTZ(startedAt),
+		EndedAt:   ConvertToFixedTZ(endedAt),
+	}
+}

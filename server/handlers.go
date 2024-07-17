@@ -85,3 +85,34 @@ func (s *APIServer) handleGetTrainerAppointments(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, appointments)
 }
+
+func (s *APIServer) handleGetTrainerAvailability(c echo.Context) error {
+	req := new(GetTrainerAvailabilityReq)
+	logger := GetEchoLogger(c)
+
+	if err := c.Bind(req); err != nil {
+		logger.Error().Err(err).Msg("Failed to bind request")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if err := c.Validate(req); err != nil {
+		logger.Error().Err(err).Msg("Failed to validate request")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	parsedFrom, _ := models.ParseDateStr(req.From)
+	parsedTo, _ := models.ParseDateStr(req.To)
+
+	timeSlots, err := s.store.GetTrainerAvailability(
+		req.TrainerID,
+		parsedFrom,
+		parsedTo,
+	)
+
+	if err != nil {
+		logger.Error().Err(err).Msg("Failed to get availability")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, timeSlots)
+}
