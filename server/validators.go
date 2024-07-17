@@ -22,8 +22,8 @@ func NewCustomValidator() *CustomValidator {
 	trans, _ := uni.GetTranslator("en")
 
 	validate := validator.New()
-	validate.RegisterStructValidation(AppointmentFromToValidation, GetTrainerAppointmentsReq{})
-	validate.RegisterStructValidation(AvailabilityFromToValidation, GetTrainerAvailabilityReq{})
+	validate.RegisterStructValidation(AppointmentTimeframeValidation, GetTrainerAppointmentsReq{})
+	validate.RegisterStructValidation(AvailabilityTimeframeValidation, GetTrainerAvailabilityReq{})
 	validate.RegisterValidation("is-future-date", ValidateFutureDate)
 
 	en_translations.RegisterDefaultTranslations(validate, trans)
@@ -69,8 +69,8 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 type PostAppointmentReq struct {
 	UserID    int    `json:"user_id" validate:"required,min=1"`
 	TrainerID int    `json:"trainer_id" validate:"required,min=1"`
-	StartedAt string `json:"started_at" validate:"required,datetime=2006-01-02T15:04:05Z07:00,is-future-date"`
-	EndedAt   string `json:"ended_at" validate:"required,datetime=2006-01-02T15:04:05Z07:00,is-future-date"`
+	StartsAt  string `json:"starts_at" validate:"required,datetime=2006-01-02T15:04:05Z07:00,is-future-date"`
+	EndsAt    string `json:"ends_at" validate:"required,datetime=2006-01-02T15:04:05Z07:00,is-future-date"`
 }
 
 func ValidateFutureDate(fl validator.FieldLevel) bool {
@@ -83,56 +83,56 @@ func ValidateFutureDate(fl validator.FieldLevel) bool {
 
 type GetTrainerAppointmentsReq struct {
 	TrainerID int    `param:"trainer_id" validate:"required,min=1"`
-	From      string `query:"from" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
-	To        string `query:"to" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
+	StartsAt  string `query:"starts_at" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
+	EndsAt    string `query:"ends_at" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
 }
 
-func AppointmentFromToValidation(sl validator.StructLevel) {
+func AppointmentTimeframeValidation(sl validator.StructLevel) {
 	req := sl.Current().Interface().(GetTrainerAppointmentsReq)
 
-	parsedFrom, err := time.Parse(time.RFC3339, req.From)
+	parsedStartsAt, err := time.Parse(time.RFC3339, req.StartsAt)
 	if err != nil {
-		sl.ReportError(parsedFrom, "from", "From", "datetime", "")
+		sl.ReportError(parsedStartsAt, "starts_at", "StartsAt", "datetime", "")
 	}
 
-	parsedTo, err := time.Parse(time.RFC3339, req.To)
+	parsedEndsAt, err := time.Parse(time.RFC3339, req.EndsAt)
 	if err != nil {
-		sl.ReportError(parsedTo, "to", "To", "datetime", "")
+		sl.ReportError(parsedEndsAt, "ends_at", "EndsAt", "datetime", "")
 	}
 
-	if parsedFrom.After(parsedTo) {
-		sl.ReportError(parsedFrom, "from", "From", "timeframe-invalid", "")
+	if parsedStartsAt.After(parsedEndsAt) {
+		sl.ReportError(parsedStartsAt, "starts_at", "StartsAt", "timeframe-invalid", "")
 	}
 
-	if parsedTo.Sub(parsedFrom) > 90*24*time.Hour {
-		sl.ReportError(parsedTo, "to", "To", "timeframe-max", "")
+	if parsedEndsAt.Sub(parsedStartsAt) > 90*24*time.Hour {
+		sl.ReportError(parsedEndsAt, "ends_at", "EndsAt", "timeframe-max", "")
 	}
 }
 
 type GetTrainerAvailabilityReq struct {
 	TrainerID int    `param:"trainer_id" validate:"required,min=1"`
-	From      string `query:"from" validate:"required,datetime=2006-01-02T15:04:05Z07:00,is-future-date"`
-	To        string `query:"to" validate:"required,datetime=2006-01-02T15:04:05Z07:00,is-future-date"`
+	StartsAt  string `query:"starts_at" validate:"required,datetime=2006-01-02T15:04:05Z07:00,is-future-date"`
+	EndsAt    string `query:"ends_at" validate:"required,datetime=2006-01-02T15:04:05Z07:00,is-future-date"`
 }
 
-func AvailabilityFromToValidation(sl validator.StructLevel) {
+func AvailabilityTimeframeValidation(sl validator.StructLevel) {
 	req := sl.Current().Interface().(GetTrainerAvailabilityReq)
 
-	parsedFrom, err := time.Parse(time.RFC3339, req.From)
+	parsedStartsAt, err := time.Parse(time.RFC3339, req.StartsAt)
 	if err != nil {
-		sl.ReportError(parsedFrom, "from", "From", "datetime", "")
+		sl.ReportError(parsedStartsAt, "starts_at", "StartsAt", "datetime", "")
 	}
 
-	parsedTo, err := time.Parse(time.RFC3339, req.To)
+	parsedEndsAt, err := time.Parse(time.RFC3339, req.EndsAt)
 	if err != nil {
-		sl.ReportError(parsedTo, "to", "To", "datetime", "")
+		sl.ReportError(parsedEndsAt, "ends_at", "EndsAt", "datetime", "")
 	}
 
-	if parsedFrom.After(parsedTo) {
-		sl.ReportError(parsedFrom, "from", "From", "timeframe-invalid", "")
+	if parsedStartsAt.After(parsedEndsAt) {
+		sl.ReportError(parsedStartsAt, "starts_at", "StartsAt", "timeframe-invalid", "")
 	}
 
-	if parsedTo.Sub(parsedFrom) > 90*24*time.Hour {
-		sl.ReportError(parsedTo, "to", "To", "timeframe-max", "")
+	if parsedEndsAt.Sub(parsedStartsAt) > 90*24*time.Hour {
+		sl.ReportError(parsedEndsAt, "ends_at", "EndsAt", "timeframe-max", "")
 	}
 }

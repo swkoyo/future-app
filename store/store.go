@@ -39,8 +39,8 @@ func (s *Store) createAppointmentTable() error {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         trainer_id INTEGER NOT NULL,
-        started_at DATETIME NOT NULL,
-        ended_at DATETIME NOT NULL
+        starts_at DATETIME NOT NULL,
+        ends_at DATETIME NOT NULL
     );
     `
 
@@ -57,7 +57,7 @@ func (s *Store) Close() {
 
 func (s *Store) CreateAppointment(data *models.Appointment) (*models.Appointment, error) {
 	query := `
-	INSERT INTO appointments (user_id, trainer_id, started_at, ended_at)
+	INSERT INTO appointments (user_id, trainer_id, starts_at, ends_at)
 	VALUES ($1, $2, $3, $4)
 	`
 
@@ -65,8 +65,8 @@ func (s *Store) CreateAppointment(data *models.Appointment) (*models.Appointment
 		query,
 		data.UserID,
 		data.TrainerID,
-		data.StartedAt.Format(time.RFC3339),
-		data.EndedAt.Format(time.RFC3339),
+		data.StartsAt.Format(time.RFC3339),
+		data.EndsAt.Format(time.RFC3339),
 	)
 
 	if err != nil {
@@ -89,15 +89,15 @@ func (s *Store) ValidateAvailableTimeslot(data *models.Appointment) error {
 	query := `
 	SELECT COUNT(*)
 	FROM appointments
-	WHERE (user_id = $1 OR trainer_id = $2) AND started_at = $3 AND ended_at = $4
+	WHERE (user_id = $1 OR trainer_id = $2) AND starts_at = $3 AND ends_at = $4
 	`
 
 	if err := s.DB.QueryRow(
 		query,
 		data.UserID,
 		data.TrainerID,
-		data.StartedAt.Format(time.RFC3339),
-		data.EndedAt.Format(time.RFC3339),
+		data.StartsAt.Format(time.RFC3339),
+		data.EndsAt.Format(time.RFC3339),
 	).Scan(&count); err != nil {
 		return err
 	}
@@ -109,24 +109,24 @@ func (s *Store) ValidateAvailableTimeslot(data *models.Appointment) error {
 	return nil
 }
 
-func (s *Store) GetAppointmentsByTrainerID(trainerID int, from, to time.Time) ([]*models.Appointment, error) {
+func (s *Store) GetAppointmentsByTrainerID(trainerID int, startsAt, endsAt time.Time) ([]*models.Appointment, error) {
 	appointments := make([]*models.Appointment, 0)
 	query := `
-	SELECT id, user_id, trainer_id, started_at, ended_at
+	SELECT id, user_id, trainer_id, starts_at, ends_at
 	FROM appointments
 	WHERE trainer_id = $1
 	AND (
-		(started_at >= $2 AND started_at <= $3)
-		OR (ended_at >= $2 AND ended_at <= $3)
-		OR (started_at >= $2 AND ended_at <= $3)
+		(starts_at >= $2 AND starts_at <= $3)
+		OR (ends_at >= $2 AND ends_at <= $3)
+		OR (starts_at >= $2 AND ends_at <= $3)
 	)
-	ORDER BY started_at ASC
+	ORDER BY starts_at ASC
 	`
 	rows, err := s.DB.Query(
 		query,
 		trainerID,
-		from.Format(time.RFC3339),
-		to.Format(time.RFC3339),
+		startsAt.Format(time.RFC3339),
+		endsAt.Format(time.RFC3339),
 	)
 	if err != nil {
 		return nil, err
@@ -139,14 +139,14 @@ func (s *Store) GetAppointmentsByTrainerID(trainerID int, from, to time.Time) ([
 			&appointment.ID,
 			&appointment.UserID,
 			&appointment.TrainerID,
-			&appointment.StartedAt,
-			&appointment.EndedAt,
+			&appointment.StartsAt,
+			&appointment.EndsAt,
 		); err != nil {
 			return nil, err
 		}
 
-		appointment.StartedAt = models.ConvertToFixedTZ(appointment.StartedAt)
-		appointment.EndedAt = models.ConvertToFixedTZ(appointment.EndedAt)
+		appointment.StartsAt = models.ConvertToFixedTZ(appointment.StartsAt)
+		appointment.EndsAt = models.ConvertToFixedTZ(appointment.EndsAt)
 
 		appointments = append(appointments, &appointment)
 	}
@@ -154,8 +154,8 @@ func (s *Store) GetAppointmentsByTrainerID(trainerID int, from, to time.Time) ([
 	return appointments, nil
 }
 
-func (s *Store) GetTrainerAvailability(trainerID int, from, to time.Time) (*[]models.Timeslot, error) {
-	appointments, err := s.GetAppointmentsByTrainerID(trainerID, from, to)
+func (s *Store) GetTrainerAvailability(trainerID int, startsAt, endsAt time.Time) (*[]models.Timeslot, error) {
+	appointments, err := s.GetAppointmentsByTrainerID(trainerID, startsAt, endsAt)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +163,7 @@ func (s *Store) GetTrainerAvailability(trainerID int, from, to time.Time) (*[]mo
 	timeslots := make([]models.Timeslot, 0)
 	currAppIdx := 0
 
-	for date := from; date.Before(to); date = date.Add(24 * time.Hour) {
+	for date := startsAt; date.Before(endsAt); date = date.Add(24 * time.Hour) {
 		if date.Weekday() == time.Saturday || date.Weekday() == time.Sunday {
 			continue
 		}
@@ -171,8 +171,8 @@ func (s *Store) GetTrainerAvailability(trainerID int, from, to time.Time) (*[]mo
 		currentDate := time.Date(date.Year(), date.Month(), date.Day(), 8, 0, 0, 0, date.Location())
 
 		for currentDate.Before(time.Date(date.Year(), date.Month(), date.Day(), 17, 0, 0, 0, date.Location())) {
-			if currAppIdx < len(appointments) && appointments[currAppIdx].StartedAt.Equal(currentDate) && appointments[currAppIdx].EndedAt.Equal(currentDate.Add(30*time.Minute)) {
-				currentDate = appointments[currAppIdx].EndedAt
+			if currAppIdx < len(appointments) && appointments[currAppIdx].StartsAt.Equal(currentDate) && appointments[currAppIdx].EndsAt.Equal(currentDate.Add(30*time.Minute)) {
+				currentDate = appointments[currAppIdx].EndsAt
 				currAppIdx += 1
 				continue
 			}

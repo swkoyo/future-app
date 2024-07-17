@@ -64,8 +64,8 @@ func TestPostAppointment(t *testing.T) {
 		body := `{
         "user_id":    1,
         "trainer_id": 1,
-        "started_at": "2020-07-08T20:00:00-08:00",
-        "ended_at":   "2020-07-08T20:30:00-08:00"
+        "starts_at": "2020-07-08T20:00:00-08:00",
+        "ends_at":   "2020-07-08T20:30:00-08:00"
         }`
 		req := httptest.NewRequest(http.MethodPost, "/appointments", strings.NewReader(body))
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -84,8 +84,8 @@ func TestPostAppointment(t *testing.T) {
 		body := `{
         "user_id":    1,
         "trainer_id": 1,
-        "started_at": "2030-07-08T20:00:00Z",
-        "ended_at":   "2030-07-08T20:30:00Z"
+        "starts_at": "2030-07-08T20:00:00Z",
+        "ends_at":   "2030-07-08T20:30:00Z"
         }`
 		req := httptest.NewRequest(http.MethodPost, "/appointments", strings.NewReader(body))
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -98,8 +98,8 @@ func TestPostAppointment(t *testing.T) {
             "id":1,
             "user_id":1,
             "trainer_id":1,
-            "started_at":"2030-07-08T12:00:00-08:00",
-            "ended_at":"2030-07-08T12:30:00-08:00"
+            "starts_at":"2030-07-08T12:00:00-08:00",
+            "ends_at":"2030-07-08T12:30:00-08:00"
             }`
 			assert.JSONEq(t, expectedBody, rec.Body.String())
 		}
@@ -117,8 +117,8 @@ func TestGetTrainerAppointments(t *testing.T) {
 
 	t.Run("Invalid date format", func(t *testing.T) {
 		q := make(url.Values)
-		q.Set("from", "2020-07-08")
-		q.Set("to", "2020-07-08")
+		q.Set("starts_at", "2020-07-08")
+		q.Set("ends_at", "2020-07-08")
 		req := httptest.NewRequest(http.MethodGet, "/trainers/1/appointments?"+q.Encode(), nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
@@ -134,10 +134,10 @@ func TestGetTrainerAppointments(t *testing.T) {
 		}
 	})
 
-	t.Run("Invalid timeframe (from after to)", func(t *testing.T) {
+	t.Run("Invalid timeframe (starts_at after ends_at)", func(t *testing.T) {
 		q := make(url.Values)
-		q.Set("from", "2020-07-08T00:00:00Z")
-		q.Set("to", "2020-07-05T00:00:00Z")
+		q.Set("starts_at", "2020-07-08T00:00:00Z")
+		q.Set("ends_at", "2020-07-05T00:00:00Z")
 		req := httptest.NewRequest(http.MethodGet, "/trainers/1/appointments?"+q.Encode(), nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
@@ -155,8 +155,8 @@ func TestGetTrainerAppointments(t *testing.T) {
 
 	t.Run("Invalid timeframe (more than 90 days)", func(t *testing.T) {
 		q := make(url.Values)
-		q.Set("from", "2020-07-01T00:00:00Z")
-		q.Set("to", "2020-10-01T00:00:00Z")
+		q.Set("starts_at", "2020-07-01T00:00:00Z")
+		q.Set("ends_at", "2020-10-01T00:00:00Z")
 		req := httptest.NewRequest(http.MethodGet, "/trainers/1/appointments?"+q.Encode(), nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
@@ -174,8 +174,8 @@ func TestGetTrainerAppointments(t *testing.T) {
 
 	t.Run("Valid timeframe (90 days)", func(t *testing.T) {
 		q := make(url.Values)
-		q.Set("from", "2020-07-01T00:00:00Z")
-		q.Set("to", "2020-09-29T00:00:00Z")
+		q.Set("starts_at", "2020-07-01T00:00:00Z")
+		q.Set("ends_at", "2020-09-29T00:00:00Z")
 		req := httptest.NewRequest(http.MethodGet, "/trainers/1/appointments?"+q.Encode(), nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
@@ -201,8 +201,8 @@ func TestGetTrainerAvailability(t *testing.T) {
 
 	t.Run("Invalid date format", func(t *testing.T) {
 		q := make(url.Values)
-		q.Set("from", "2020-07-01")
-		q.Set("to", "2020-10-01")
+		q.Set("starts_at", "2020-07-01")
+		q.Set("ends_at", "2020-10-01")
 		req := httptest.NewRequest(http.MethodGet, "/trainers/1/availability?"+q.Encode(), nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
@@ -218,10 +218,10 @@ func TestGetTrainerAvailability(t *testing.T) {
 		}
 	})
 
-	t.Run("Invalid timeframe (from after to)", func(t *testing.T) {
+	t.Run("Invalid timeframe (starts_at after ends_at)", func(t *testing.T) {
 		q := make(url.Values)
-		q.Set("from", "2030-07-08T00:00:00Z")
-		q.Set("to", "2030-07-05T00:00:00Z")
+		q.Set("starts_at", "2030-07-08T00:00:00Z")
+		q.Set("ends_at", "2030-07-05T00:00:00Z")
 		req := httptest.NewRequest(http.MethodGet, "/trainers/1/availability?"+q.Encode(), nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
@@ -239,8 +239,8 @@ func TestGetTrainerAvailability(t *testing.T) {
 
 	t.Run("Invalid timeframe (more than 90 days)", func(t *testing.T) {
 		q := make(url.Values)
-		q.Set("from", "2030-07-01T00:00:00Z")
-		q.Set("to", "2030-10-01T00:00:00Z")
+		q.Set("starts_at", "2030-07-01T00:00:00Z")
+		q.Set("ends_at", "2030-10-01T00:00:00Z")
 		req := httptest.NewRequest(http.MethodGet, "/trainers/1/availability?"+q.Encode(), nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
@@ -258,8 +258,8 @@ func TestGetTrainerAvailability(t *testing.T) {
 
 	t.Run("Invalid timeframe (in past)", func(t *testing.T) {
 		q := make(url.Values)
-		q.Set("from", "2020-07-01T00:00:00Z")
-		q.Set("to", "2020-09-29T00:00:00Z")
+		q.Set("starts_at", "2020-07-01T00:00:00Z")
+		q.Set("ends_at", "2020-09-29T00:00:00Z")
 		req := httptest.NewRequest(http.MethodGet, "/trainers/1/availability?"+q.Encode(), nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
@@ -277,8 +277,8 @@ func TestGetTrainerAvailability(t *testing.T) {
 
 	t.Run("Valid timeframe (tz updated to PST -8)", func(t *testing.T) {
 		q := make(url.Values)
-		q.Set("from", "2030-07-08T20:00:00Z")
-		q.Set("to", "2030-07-09T20:00:00Z")
+		q.Set("starts_at", "2030-07-08T20:00:00Z")
+		q.Set("ends_at", "2030-07-09T20:00:00Z")
 		req := httptest.NewRequest(http.MethodGet, "/trainers/1/availability?"+q.Encode(), nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
@@ -293,8 +293,8 @@ func TestGetTrainerAvailability(t *testing.T) {
 			err := json.Unmarshal(rec.Body.Bytes(), &timeslots)
 			if assert.NoError(t, err) && assert.NotEmpty(t, timeslots) {
 				timeFormat := "2006-01-02T15:04:05-07:00"
-				assert.Equal(t, "2030-07-08T08:00:00-08:00", timeslots[0].StartedAt.Format(timeFormat))
-				assert.Equal(t, "2030-07-08T17:00:00-08:00", timeslots[len(timeslots)-1].EndedAt.Format(timeFormat))
+				assert.Equal(t, "2030-07-08T08:00:00-08:00", timeslots[0].StartsAt.Format(timeFormat))
+				assert.Equal(t, "2030-07-08T17:00:00-08:00", timeslots[len(timeslots)-1].EndsAt.Format(timeFormat))
 			}
 		}
 	})

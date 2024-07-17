@@ -13,8 +13,8 @@ func TestPostAppointmentReqValidator(t *testing.T) {
 		req := PostAppointmentReq{
 			UserID:    1,
 			TrainerID: 1,
-			StartedAt: "2030-07-08T20:00:00Z",
-			EndedAt:   "2030-07-08T20:30:00Z",
+			StartsAt:  "2030-07-08T20:00:00Z",
+			EndsAt:    "2030-07-08T20:30:00Z",
 		}
 		err := cv.Validate(req)
 		assert.NoError(t, err)
@@ -24,8 +24,8 @@ func TestPostAppointmentReqValidator(t *testing.T) {
 		req := PostAppointmentReq{
 			UserID:    -1,
 			TrainerID: 1,
-			StartedAt: "2030-07-08T20:00:00Z",
-			EndedAt:   "2030-07-08T20:30:00Z",
+			StartsAt:  "2030-07-08T20:00:00Z",
+			EndsAt:    "2030-07-08T20:30:00Z",
 		}
 		err := cv.Validate(req)
 		assert.Error(t, err)
@@ -36,8 +36,8 @@ func TestPostAppointmentReqValidator(t *testing.T) {
 		req := PostAppointmentReq{
 			UserID:    1,
 			TrainerID: -1,
-			StartedAt: "2030-07-08T20:00:00Z",
-			EndedAt:   "2030-07-08T20:30:00Z",
+			StartsAt:  "2030-07-08T20:00:00Z",
+			EndsAt:    "2030-07-08T20:30:00Z",
 		}
 		err := cv.Validate(req)
 		assert.Error(t, err)
@@ -48,12 +48,12 @@ func TestPostAppointmentReqValidator(t *testing.T) {
 		req := PostAppointmentReq{
 			UserID:    1,
 			TrainerID: 1,
-			StartedAt: "2030-07-08 20:00:00",
-			EndedAt:   "2030-07-08 20:30:00",
+			StartsAt:  "2030-07-08 20:00:00",
+			EndsAt:    "2030-07-08 20:30:00",
 		}
 		err := cv.Validate(req)
 		assert.Error(t, err)
-		assert.Equal(t, "StartedAt does not match the 2006-01-02T15:04:05Z07:00 format", err.Error())
+		assert.Equal(t, "StartsAt does not match the 2006-01-02T15:04:05Z07:00 format", err.Error())
 	})
 }
 
@@ -63,8 +63,8 @@ func TestGetTrainerAppointmentsReqValidator(t *testing.T) {
 	t.Run("Valid Input", func(t *testing.T) {
 		req := GetTrainerAppointmentsReq{
 			TrainerID: 1,
-			From:      "2030-07-08T20:00:00Z",
-			To:        "2030-07-09T20:00:00Z",
+			StartsAt:  "2030-07-08T20:00:00Z",
+			EndsAt:    "2030-07-09T20:00:00Z",
 		}
 		err := cv.Validate(req)
 		assert.NoError(t, err)
@@ -73,8 +73,8 @@ func TestGetTrainerAppointmentsReqValidator(t *testing.T) {
 	t.Run("Invalid Timeframe", func(t *testing.T) {
 		req := GetTrainerAppointmentsReq{
 			TrainerID: 1,
-			From:      "2030-07-08T20:00:00Z",
-			To:        "2030-10-09T20:00:00Z",
+			StartsAt:  "2030-07-08T20:00:00Z",
+			EndsAt:    "2030-10-09T20:00:00Z",
 		}
 		err := cv.Validate(req)
 		assert.Error(t, err)
@@ -85,14 +85,14 @@ func TestGetTrainerAppointmentsReqValidator(t *testing.T) {
 func TestGetTrainerAvailabiliyReqValidator(t *testing.T) {
 	cv := NewCustomValidator()
 
-	t.Run("Invalid From Date", func(t *testing.T) {
+	t.Run("Invalid StartsAt Date", func(t *testing.T) {
 		req := GetTrainerAvailabilityReq{
 			TrainerID: 1,
-			From:      "2019-07-08T20:00:00Z",
-			To:        "2030-07-08T20:30:00Z",
+			StartsAt:  "2019-07-08T20:00:00Z",
+			EndsAt:    "2030-07-08T20:30:00Z",
 		}
 		err := cv.Validate(req)
 		assert.Error(t, err)
-		assert.Equal(t, "From must be a future date", err.Error())
+		assert.Equal(t, "StartsAt must be a future date", err.Error())
 	})
 }

@@ -17,8 +17,8 @@ func TestNewAppointment(t *testing.T) {
 		name      string
 		userID    int
 		trainerID int
-		startedAt time.Time
-		endedAt   time.Time
+		startsAt  time.Time
+		endsAt    time.Time
 		hasErr    bool
 		errMsg    string
 		expected  *Appointment
@@ -27,36 +27,36 @@ func TestNewAppointment(t *testing.T) {
 			name:      "valid appointment on monday at 8am",
 			userID:    1,
 			trainerID: 1,
-			startedAt: future.Add(time.Hour * 8),
-			endedAt:   future.Add(time.Hour * 8).Add(time.Minute * 30),
+			startsAt:  future.Add(time.Hour * 8),
+			endsAt:    future.Add(time.Hour * 8).Add(time.Minute * 30),
 			hasErr:    false,
 			expected: &Appointment{
 				UserID:    1,
 				TrainerID: 1,
-				StartedAt: future.Add(time.Hour * 8),
-				EndedAt:   future.Add(time.Hour * 8).Add(time.Minute * 30),
+				StartsAt:  future.Add(time.Hour * 8),
+				EndsAt:    future.Add(time.Hour * 8).Add(time.Minute * 30),
 			},
 		},
 		{
 			name:      "valid appointment on friday at 4:30pm",
 			userID:    1,
 			trainerID: 1,
-			startedAt: future.Add(time.Hour * 24 * 4).Add(time.Hour * 16).Add(time.Minute * 30),
-			endedAt:   future.Add(time.Hour * 24 * 4).Add(time.Hour * 17),
+			startsAt:  future.Add(time.Hour * 24 * 4).Add(time.Hour * 16).Add(time.Minute * 30),
+			endsAt:    future.Add(time.Hour * 24 * 4).Add(time.Hour * 17),
 			hasErr:    false,
 			expected: &Appointment{
 				UserID:    1,
 				TrainerID: 1,
-				StartedAt: future.Add(time.Hour * 24 * 4).Add(time.Hour * 16).Add(time.Minute * 30),
-				EndedAt:   future.Add(time.Hour * 24 * 4).Add(time.Hour * 17),
+				StartsAt:  future.Add(time.Hour * 24 * 4).Add(time.Hour * 16).Add(time.Minute * 30),
+				EndsAt:    future.Add(time.Hour * 24 * 4).Add(time.Hour * 17),
 			},
 		},
 		{
 			name:      "negative user ID",
 			userID:    -1,
 			trainerID: 1,
-			startedAt: future.Add(time.Hour * 8),
-			endedAt:   future.Add(time.Hour * 8).Add(time.Minute * 30),
+			startsAt:  future.Add(time.Hour * 8),
+			endsAt:    future.Add(time.Hour * 8).Add(time.Minute * 30),
 			hasErr:    true,
 			errMsg:    "UserID must be greater than 0",
 		},
@@ -64,8 +64,8 @@ func TestNewAppointment(t *testing.T) {
 			name:      "negative trainer ID",
 			userID:    1,
 			trainerID: -1,
-			startedAt: future.Add(time.Hour * 8),
-			endedAt:   future.Add(time.Hour * 8).Add(time.Minute * 30),
+			startsAt:  future.Add(time.Hour * 8),
+			endsAt:    future.Add(time.Hour * 8).Add(time.Minute * 30),
 			hasErr:    true,
 			errMsg:    "TrainerID must be greater than 0",
 		},
@@ -73,8 +73,8 @@ func TestNewAppointment(t *testing.T) {
 			name:      "start time in past",
 			userID:    1,
 			trainerID: 1,
-			startedAt: past.Add(time.Hour * 8),
-			endedAt:   past.Add(time.Hour * 8).Add(time.Minute * 30),
+			startsAt:  past.Add(time.Hour * 8),
+			endsAt:    past.Add(time.Hour * 8).Add(time.Minute * 30),
 			hasErr:    true,
 			errMsg:    "Appointments must be scheduled at least 1 hour in advance",
 		},
@@ -82,8 +82,8 @@ func TestNewAppointment(t *testing.T) {
 			name:      "start time less than 1 hour in advance",
 			userID:    1,
 			trainerID: 1,
-			startedAt: now.Add(time.Minute * 30),
-			endedAt:   now.Add(time.Hour),
+			startsAt:  now.Add(time.Minute * 30),
+			endsAt:    now.Add(time.Hour),
 			hasErr:    true,
 			errMsg:    "Appointments must be scheduled at least 1 hour in advance",
 		},
@@ -91,8 +91,8 @@ func TestNewAppointment(t *testing.T) {
 			name:      "start time same as end time",
 			userID:    1,
 			trainerID: 1,
-			startedAt: future.Add(time.Hour * 8),
-			endedAt:   future.Add(time.Hour * 8),
+			startsAt:  future.Add(time.Hour * 8),
+			endsAt:    future.Add(time.Hour * 8),
 			hasErr:    true,
 			errMsg:    "Appointment start time must be before end time",
 		},
@@ -100,8 +100,8 @@ func TestNewAppointment(t *testing.T) {
 			name:      "start time after end time",
 			userID:    1,
 			trainerID: 1,
-			startedAt: future.Add(time.Hour * 8).Add(time.Minute),
-			endedAt:   future.Add(time.Hour * 8),
+			startsAt:  future.Add(time.Hour * 8).Add(time.Minute),
+			endsAt:    future.Add(time.Hour * 8),
 			hasErr:    true,
 			errMsg:    "Appointment start time must be before end time",
 		},
@@ -109,8 +109,8 @@ func TestNewAppointment(t *testing.T) {
 			name:      "start time outside business hours",
 			userID:    1,
 			trainerID: 1,
-			startedAt: future.Add(time.Hour * 7).Add(time.Minute * 30),
-			endedAt:   future.Add(time.Hour * 8),
+			startsAt:  future.Add(time.Hour * 7).Add(time.Minute * 30),
+			endsAt:    future.Add(time.Hour * 8),
 			hasErr:    true,
 			errMsg:    "Appointment must be scheduled between 8am and 5pm PST",
 		},
@@ -118,8 +118,8 @@ func TestNewAppointment(t *testing.T) {
 			name:      "end time outside business hours",
 			userID:    1,
 			trainerID: 1,
-			startedAt: future.Add(time.Hour * 17),
-			endedAt:   future.Add(time.Hour * 17).Add(time.Minute * 30),
+			startsAt:  future.Add(time.Hour * 17),
+			endsAt:    future.Add(time.Hour * 17).Add(time.Minute * 30),
 			hasErr:    true,
 			errMsg:    "Appointment must be scheduled between 8am and 5pm PST",
 		},
@@ -127,8 +127,8 @@ func TestNewAppointment(t *testing.T) {
 			name:      "appointment on weekend",
 			userID:    1,
 			trainerID: 1,
-			startedAt: future.Add(-time.Hour * 24).Add(time.Hour * 8),
-			endedAt:   future.Add(-time.Hour * 24).Add(time.Hour * 8).Add(time.Minute * 30),
+			startsAt:  future.Add(-time.Hour * 24).Add(time.Hour * 8),
+			endsAt:    future.Add(-time.Hour * 24).Add(time.Hour * 8).Add(time.Minute * 30),
 			hasErr:    true,
 			errMsg:    "Appointment must be scheduled between Monday and Friday PST",
 		},
@@ -136,8 +136,8 @@ func TestNewAppointment(t *testing.T) {
 			name:      "appointment not on the hour or half hour",
 			userID:    1,
 			trainerID: 1,
-			startedAt: future.Add(time.Hour * 8).Add(time.Minute * 15),
-			endedAt:   future.Add(time.Hour * 8).Add(time.Minute * 45),
+			startsAt:  future.Add(time.Hour * 8).Add(time.Minute * 15),
+			endsAt:    future.Add(time.Hour * 8).Add(time.Minute * 45),
 			hasErr:    true,
 			errMsg:    "Appointment must be scheduled on the hour or half hour PST",
 		},
@@ -145,8 +145,8 @@ func TestNewAppointment(t *testing.T) {
 			name:      "appointment not in 30-minute increments",
 			userID:    1,
 			trainerID: 1,
-			startedAt: future.Add(time.Hour * 8),
-			endedAt:   future.Add(time.Hour * 9),
+			startsAt:  future.Add(time.Hour * 8),
+			endsAt:    future.Add(time.Hour * 9),
 			hasErr:    true,
 			errMsg:    "Appointment must be scheduled in 30-minute increments",
 		},
@@ -154,7 +154,7 @@ func TestNewAppointment(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			appointment, err := NewAppointment(tc.userID, tc.trainerID, tc.startedAt, tc.endedAt)
+			appointment, err := NewAppointment(tc.userID, tc.trainerID, tc.startsAt, tc.endsAt)
 			if tc.hasErr {
 				assert.Error(t, err)
 				assert.Nil(t, appointment)

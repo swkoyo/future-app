@@ -21,14 +21,14 @@ func (s *APIServer) handlePostAppointment(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	parsedStartedAt, _ := models.ParseDateStr(req.StartedAt)
-	parsedEndedAt, _ := models.ParseDateStr(req.EndedAt)
+	parsedStartsAt, _ := models.ParseDateStr(req.StartsAt)
+	parsedEndsAt, _ := models.ParseDateStr(req.EndsAt)
 
 	appointment, err := models.NewAppointment(
 		req.UserID,
 		req.TrainerID,
-		parsedStartedAt,
-		parsedEndedAt,
+		parsedStartsAt,
+		parsedEndsAt,
 	)
 
 	if err != nil {
@@ -69,13 +69,13 @@ func (s *APIServer) handleGetTrainerAppointments(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	parsedFrom, _ := models.ParseDateStr(req.From)
-	parsedTo, _ := models.ParseDateStr(req.To)
+	parsedStartsAt, _ := models.ParseDateStr(req.StartsAt)
+	parsedEndsAt, _ := models.ParseDateStr(req.EndsAt)
 
 	appointments, err := s.store.GetAppointmentsByTrainerID(
 		req.TrainerID,
-		parsedFrom,
-		parsedTo,
+		parsedStartsAt,
+		parsedEndsAt,
 	)
 
 	if err != nil {
@@ -100,13 +100,13 @@ func (s *APIServer) handleGetTrainerAvailability(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	parsedFrom, _ := models.ParseDateStr(req.From)
-	parsedTo, _ := models.ParseDateStr(req.To)
+	parsedStartsAt, _ := models.ParseDateStr(req.StartsAt)
+	parsedEndsAt, _ := models.ParseDateStr(req.EndsAt)
 
 	timeSlots, err := s.store.GetTrainerAvailability(
 		req.TrainerID,
-		parsedFrom,
-		parsedTo,
+		parsedStartsAt,
+		parsedEndsAt,
 	)
 
 	if err != nil {

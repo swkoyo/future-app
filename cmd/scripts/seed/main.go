@@ -31,7 +31,7 @@ func main() {
 
 	for _, appointment := range appointments {
 		query := `
-        INSERT INTO appointments (id, user_id, trainer_id, started_at, ended_at)
+        INSERT INTO appointments (id, user_id, trainer_id, starts_at, ends_at)
         VALUES ($1, $2, $3, $4, $5)
         `
 
@@ -40,8 +40,8 @@ func main() {
 			appointment.ID,
 			appointment.UserID,
 			appointment.TrainerID,
-			(appointment.StartedAt).Format(time.RFC3339),
-			(appointment.EndedAt).Format(time.RFC3339),
+			(appointment.StartsAt).Format(time.RFC3339),
+			(appointment.EndsAt).Format(time.RFC3339),
 		)
 
 		if err != nil {

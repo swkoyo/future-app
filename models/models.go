@@ -9,11 +9,11 @@ type Appointment struct {
 	ID        int       `json:"id"`
 	UserID    int       `json:"user_id"`
 	TrainerID int       `json:"trainer_id"`
-	StartedAt time.Time `json:"started_at"`
-	EndedAt   time.Time `json:"ended_at"`
+	StartsAt  time.Time `json:"starts_at"`
+	EndsAt    time.Time `json:"ends_at"`
 }
 
-func NewAppointment(userID, trainerID int, startedAt, endedAt time.Time) (*Appointment, error) {
+func NewAppointment(userID, trainerID int, startsAt, endsAt time.Time) (*Appointment, error) {
 	if userID < 1 {
 		return nil, errors.New("UserID must be greater than 0")
 	}
@@ -22,61 +22,61 @@ func NewAppointment(userID, trainerID int, startedAt, endedAt time.Time) (*Appoi
 		return nil, errors.New("TrainerID must be greater than 0")
 	}
 
-	startedAt = ConvertToFixedTZ(startedAt)
-	endedAt = ConvertToFixedTZ(endedAt)
+	startsAt = ConvertToFixedTZ(startsAt)
+	endsAt = ConvertToFixedTZ(endsAt)
 
-	if startedAt.Local().Before(time.Now().Add(time.Hour)) {
+	if startsAt.Local().Before(time.Now().Add(time.Hour)) {
 		return nil, errors.New("Appointments must be scheduled at least 1 hour in advance")
 	}
 
-	if startedAt.Equal(endedAt) || startedAt.After(endedAt) {
+	if startsAt.Equal(endsAt) || startsAt.After(endsAt) {
 		return nil, errors.New("Appointment start time must be before end time")
 	}
 
-	if startedAt.Hour() < 8 || startedAt.Hour() >= 17 {
+	if startsAt.Hour() < 8 || startsAt.Hour() >= 17 {
 		return nil, errors.New("Appointment must be scheduled between 8am and 5pm PST")
 	}
 
-	if endedAt.Hour() < 8 || endedAt.Hour() > 17 {
+	if endsAt.Hour() < 8 || endsAt.Hour() > 17 {
 		return nil, errors.New("Appointment must be scheduled between 8am and 5pm PST")
 	}
 
-	if int(startedAt.Weekday()) < 1 || int(startedAt.Weekday()) > 5 {
+	if int(startsAt.Weekday()) < 1 || int(startsAt.Weekday()) > 5 {
 		return nil, errors.New("Appointment must be scheduled between Monday and Friday PST")
 	}
 
-	if int(endedAt.Weekday()) < 1 || int(endedAt.Weekday()) > 5 {
+	if int(endsAt.Weekday()) < 1 || int(endsAt.Weekday()) > 5 {
 		return nil, errors.New("Appointment must be scheduled between Monday and Friday PST")
 	}
 
-	if startedAt.Minute() != 0 && startedAt.Minute() != 30 {
+	if startsAt.Minute() != 0 && startsAt.Minute() != 30 {
 		return nil, errors.New("Appointment must be scheduled on the hour or half hour PST")
 	}
 
-	if endedAt.Minute() != 0 && endedAt.Minute() != 30 {
+	if endsAt.Minute() != 0 && endsAt.Minute() != 30 {
 		return nil, errors.New("Appointment must be scheduled on the hour or half hour PST")
 	}
 
-	if !startedAt.Add(time.Minute * 30).Equal(endedAt) {
+	if !startsAt.Add(time.Minute * 30).Equal(endsAt) {
 		return nil, errors.New("Appointment must be scheduled in 30-minute increments")
 	}
 
 	return &Appointment{
 		UserID:    userID,
 		TrainerID: trainerID,
-		StartedAt: startedAt,
-		EndedAt:   endedAt,
+		StartsAt:  startsAt,
+		EndsAt:    endsAt,
 	}, nil
 }
 
 type Timeslot struct {
-	StartedAt time.Time `json:"started_at"`
-	EndedAt   time.Time `json:"ended_at"`
+	StartsAt time.Time `json:"starts_at"`
+	EndsAt   time.Time `json:"ends_at"`
 }
 
-func NewTimeslot(startedAt, endedAt time.Time) Timeslot {
+func NewTimeslot(startsAt, endsAt time.Time) Timeslot {
 	return Timeslot{
-		StartedAt: ConvertToFixedTZ(startedAt),
-		EndedAt:   ConvertToFixedTZ(endedAt),
+		StartsAt: ConvertToFixedTZ(startsAt),
+		EndsAt:   ConvertToFixedTZ(endsAt),
 	}
 }
