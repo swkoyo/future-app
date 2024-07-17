@@ -240,3 +240,6 @@ Will return an empty list if the trainer has no available timeslots.
     }
 ]
 ```
+
+## Note
+I changed the fields `started_at` and `ended_at` to `starts_at` and `ends_at` in the file `appointments.json` to keep it consistent with the requirements.
