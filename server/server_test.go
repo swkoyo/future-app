@@ -2,14 +2,17 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"future-app/models"
 	"future-app/store"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 
+	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 )
@@ -18,6 +21,16 @@ var testStore *store.Store
 var apiServer *APIServer
 
 func setup() error {
+	err := godotenv.Load("../.env")
+	if err != nil {
+		return err
+	}
+
+	port := os.Getenv("TEST_PORT")
+	if port == "" {
+		port = "8081"
+	}
+
 	db, err := store.NewTestStore()
 	if err != nil {
 		return err
@@ -29,7 +42,7 @@ func setup() error {
 		return err
 	}
 
-	apiServer = NewAPIServer(":3001", testStore)
+	apiServer = NewAPIServer(fmt.Sprintf(":%s", port), testStore)
 
 	return nil
 }
