@@ -47,6 +47,8 @@ func NewAPIServer(port string, store *s.Store) *APIServer {
 	e.Use(middleware.Recover())
 	e.Use(LoggingMiddleware)
 
+	e.Validator = NewCustomValidator()
+
 	s := &APIServer{port: port, echo: e, store: store}
 
 	e.GET("/health", func(c echo.Context) error {
