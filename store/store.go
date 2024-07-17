@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"future-app/models"
 	"time"
 
@@ -14,6 +15,14 @@ type Store struct {
 
 func NewStore() (*Store, error) {
 	db, err := sql.Open("sqlite3", "./store.db")
+	if err != nil {
+		return nil, err
+	}
+	return &Store{DB: db}, nil
+}
+
+func NewTestStore() (*Store, error) {
+	db, err := sql.Open("sqlite3", ":memory:")
 	if err != nil {
 		return nil, err
 	}
@@ -54,10 +63,10 @@ func (s *Store) CreateAppointment(data *models.Appointment) (*models.Appointment
 
 	res, err := s.DB.Exec(
 		query,
-		&data.UserID,
-		&data.TrainerID,
-		(&data.StartedAt).Format(time.RFC3339),
-		(&data.EndedAt).Format(time.RFC3339),
+		data.UserID,
+		data.TrainerID,
+		data.StartedAt.Format(time.RFC3339),
+		data.EndedAt.Format(time.RFC3339),
 	)
 
 	if err != nil {
@@ -72,4 +81,30 @@ func (s *Store) CreateAppointment(data *models.Appointment) (*models.Appointment
 
 	data.ID = int(id)
 	return data, nil
+}
+
+func (s *Store) ValidateAvailableTimeslot(data *models.Appointment) error {
+	var count int
+
+	query := `
+	SELECT COUNT(*)
+	FROM appointments
+	WHERE (user_id = $1 OR trainer_id = $2) AND started_at = $3 AND ended_at = $4
+	`
+
+	if err := s.DB.QueryRow(
+		query,
+		data.UserID,
+		data.TrainerID,
+		data.StartedAt.Format(time.RFC3339),
+		data.EndedAt.Format(time.RFC3339),
+	).Scan(&count); err != nil {
+		return err
+	}
+
+	if count != 0 {
+		return errors.New("Timeslot is not available")
+	}
+
+	return nil
 }

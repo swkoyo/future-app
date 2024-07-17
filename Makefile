@@ -11,6 +11,10 @@ clean:
 	@echo "Cleaning..."
 	@rm -rf tmp
 
+test:
+	@echo "Testing..."
+	@go test -v ./...
+
 seed:
 	@echo "Seeding..."
 	@go run cmd/scripts/seed/main.go seed
@@ -18,4 +22,4 @@ seed:
 watch:
 	air
 
-.PHONY: all build run clean watch seed
+.PHONY: build run clean test seed watch
