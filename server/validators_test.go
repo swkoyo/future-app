@@ -60,7 +60,15 @@ func TestPostAppointmentReqValidator(t *testing.T) {
 func TestGetTrainerAppointmentsReqValidator(t *testing.T) {
 	cv := NewCustomValidator()
 
-	t.Run("Valid Input", func(t *testing.T) {
+	t.Run("Valid Input Without", func(t *testing.T) {
+		req := GetTrainerAppointmentsReq{
+			TrainerID: 1,
+		}
+		err := cv.Validate(req)
+		assert.NoError(t, err)
+	})
+
+	t.Run("Valid Input With Full Timeframe", func(t *testing.T) {
 		req := GetTrainerAppointmentsReq{
 			TrainerID: 1,
 			StartsAt:  "2030-07-08T20:00:00Z",
@@ -70,15 +78,35 @@ func TestGetTrainerAppointmentsReqValidator(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
-	t.Run("Invalid Timeframe", func(t *testing.T) {
+	t.Run("Invalid timeframe (only endsAt)", func(t *testing.T) {
+		req := GetTrainerAppointmentsReq{
+			TrainerID: 1,
+			EndsAt:    "2030-07-09T20:00:00Z",
+		}
+		err := cv.Validate(req)
+		assert.Error(t, err)
+		assert.Equal(t, "Invalid timeframe", err.Error())
+	})
+
+	t.Run("Invalid timeframe (only startsAt)", func(t *testing.T) {
 		req := GetTrainerAppointmentsReq{
 			TrainerID: 1,
 			StartsAt:  "2030-07-08T20:00:00Z",
+		}
+		err := cv.Validate(req)
+		assert.Error(t, err)
+		assert.Equal(t, "Invalid timeframe", err.Error())
+	})
+
+	t.Run("Invalid Timeframe (startedAt after endedAt)", func(t *testing.T) {
+		req := GetTrainerAppointmentsReq{
+			TrainerID: 1,
+			StartsAt:  "2030-11-08T20:00:00Z",
 			EndsAt:    "2030-10-09T20:00:00Z",
 		}
 		err := cv.Validate(req)
 		assert.Error(t, err)
-		assert.Equal(t, "Timeframe must be 90 days or lower", err.Error())
+		assert.Equal(t, "Invalid timeframe", err.Error())
 	})
 }
 

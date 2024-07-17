@@ -94,14 +94,14 @@ Returns a list of a trainer's scheduled appointments within a timeframe.
 - `trainer_id`: The trainer's ID. Must be GTE 1.
 
 #### Query Parameters
-- `starts_at`: The start datetime for the search range in RFC-3339 format.
-- `ends_at`: The end datetime fro the search range in RFC-3339 format.
+- `starts_at`: (Optional) The start datetime for the search range in RFC-3339 format.
+- `ends_at`: (Optional) The end datetime fro the search range in RFC-3339 format.
 
 #### Constraints
-- The timeframe can be 90 days at most
+- To apply a timeframe, both `started_at` and `ended_at` must be provided.
 
 #### Response
-A list of the trainer's appointments within the given timeframe ordered by `starts_at` ascending.
+A list of the trainer's appointments ordered by `starts_at` ascending.
 Will return an empty list if no appointments are found.
 
 ##### Example

@@ -3,6 +3,7 @@ package server
 import (
 	"future-app/models"
 	"net/http"
+	"time"
 
 	"github.com/labstack/echo/v4"
 )
@@ -69,8 +70,13 @@ func (s *APIServer) handleGetTrainerAppointments(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	parsedStartsAt, _ := models.ParseDateStr(req.StartsAt)
-	parsedEndsAt, _ := models.ParseDateStr(req.EndsAt)
+	parsedStartsAt := time.Time{}
+	parsedEndsAt := time.Time{}
+
+	if req.StartsAt != "" && req.EndsAt != "" {
+		parsedStartsAt, _ = models.ParseDateStr(req.StartsAt)
+		parsedEndsAt, _ = models.ParseDateStr(req.EndsAt)
+	}
 
 	appointments, err := s.store.GetAppointmentsByTrainerID(
 		req.TrainerID,

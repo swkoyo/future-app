@@ -153,10 +153,9 @@ func TestGetTrainerAppointments(t *testing.T) {
 		}
 	})
 
-	t.Run("Invalid timeframe (more than 90 days)", func(t *testing.T) {
+	t.Run("Invalid timeframe (only starts_at)", func(t *testing.T) {
 		q := make(url.Values)
 		q.Set("starts_at", "2020-07-01T00:00:00Z")
-		q.Set("ends_at", "2020-10-01T00:00:00Z")
 		req := httptest.NewRequest(http.MethodGet, "/trainers/1/appointments?"+q.Encode(), nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
@@ -172,7 +171,21 @@ func TestGetTrainerAppointments(t *testing.T) {
 		}
 	})
 
-	t.Run("Valid timeframe (90 days)", func(t *testing.T) {
+	t.Run("Valid without timeframe", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/trainers/1/appointments", nil)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.SetPath("/trainers/:trainer_id/appointments")
+		c.SetParamNames("trainer_id")
+		c.SetParamValues("1")
+
+		if assert.NoError(t, apiServer.handleGetTrainerAppointments(c)) {
+			assert.Equal(t, http.StatusOK, rec.Code)
+			assert.JSONEq(t, `[]`, rec.Body.String())
+		}
+	})
+
+	t.Run("Valid timeframe", func(t *testing.T) {
 		q := make(url.Values)
 		q.Set("starts_at", "2020-07-01T00:00:00Z")
 		q.Set("ends_at", "2020-09-29T00:00:00Z")

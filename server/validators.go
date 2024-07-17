@@ -83,29 +83,31 @@ func ValidateFutureDate(fl validator.FieldLevel) bool {
 
 type GetTrainerAppointmentsReq struct {
 	TrainerID int    `param:"trainer_id" validate:"required,min=1"`
-	StartsAt  string `query:"starts_at" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
-	EndsAt    string `query:"ends_at" validate:"required,datetime=2006-01-02T15:04:05Z07:00"`
+	StartsAt  string `query:"starts_at" validate:"omitempty,datetime=2006-01-02T15:04:05Z07:00"`
+	EndsAt    string `query:"ends_at" validate:"omitempty,datetime=2006-01-02T15:04:05Z07:00"`
 }
 
 func AppointmentTimeframeValidation(sl validator.StructLevel) {
 	req := sl.Current().Interface().(GetTrainerAppointmentsReq)
 
-	parsedStartsAt, err := time.Parse(time.RFC3339, req.StartsAt)
-	if err != nil {
-		sl.ReportError(parsedStartsAt, "starts_at", "StartsAt", "datetime", "")
+	if (req.StartsAt == "" && req.EndsAt != "") || (req.StartsAt != "" && req.EndsAt == "") {
+		sl.ReportError(req.StartsAt, "starts_at", "StartsAt", "timeframe-invalid", "")
 	}
 
-	parsedEndsAt, err := time.Parse(time.RFC3339, req.EndsAt)
-	if err != nil {
-		sl.ReportError(parsedEndsAt, "ends_at", "EndsAt", "datetime", "")
-	}
+	if req.StartsAt != "" && req.EndsAt != "" {
+		parsedStartsAt, err := time.Parse(time.RFC3339, req.StartsAt)
+		if err != nil {
+			sl.ReportError(parsedStartsAt, "starts_at", "StartsAt", "datetime", "")
+		}
 
-	if parsedStartsAt.After(parsedEndsAt) {
-		sl.ReportError(parsedStartsAt, "starts_at", "StartsAt", "timeframe-invalid", "")
-	}
+		parsedEndsAt, err := time.Parse(time.RFC3339, req.EndsAt)
+		if err != nil {
+			sl.ReportError(parsedEndsAt, "ends_at", "EndsAt", "datetime", "")
+		}
 
-	if parsedEndsAt.Sub(parsedStartsAt) > 90*24*time.Hour {
-		sl.ReportError(parsedEndsAt, "ends_at", "EndsAt", "timeframe-max", "")
+		if parsedStartsAt.After(parsedEndsAt) {
+			sl.ReportError(parsedStartsAt, "starts_at", "StartsAt", "timeframe-invalid", "")
+		}
 	}
 }
 

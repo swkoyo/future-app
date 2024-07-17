@@ -111,26 +111,45 @@ func (s *Store) ValidateAvailableTimeslot(data *models.Appointment) error {
 
 func (s *Store) GetAppointmentsByTrainerID(trainerID int, startsAt, endsAt time.Time) ([]*models.Appointment, error) {
 	appointments := make([]*models.Appointment, 0)
-	query := `
-	SELECT id, user_id, trainer_id, starts_at, ends_at
-	FROM appointments
-	WHERE trainer_id = $1
-	AND (
-		(starts_at >= $2 AND starts_at <= $3)
-		OR (ends_at >= $2 AND ends_at <= $3)
-		OR (starts_at >= $2 AND ends_at <= $3)
-	)
-	ORDER BY starts_at ASC
-	`
-	rows, err := s.DB.Query(
-		query,
-		trainerID,
-		startsAt.Format(time.RFC3339),
-		endsAt.Format(time.RFC3339),
-	)
+
+	var rows *sql.Rows
+	var err error
+
+	if startsAt.IsZero() || endsAt.IsZero() {
+		query := `
+		SELECT id, user_id, trainer_id, starts_at, ends_at
+		FROM appointments
+		WHERE trainer_id = $1
+		ORDER BY starts_at ASC
+		`
+		rows, err = s.DB.Query(
+			query,
+			trainerID,
+		)
+	} else {
+		query := `
+		SELECT id, user_id, trainer_id, starts_at, ends_at
+		FROM appointments
+		WHERE trainer_id = $1
+		AND (
+			(starts_at >= $2 AND starts_at <= $3)
+			OR (ends_at >= $2 AND ends_at <= $3)
+			OR (starts_at >= $2 AND ends_at <= $3)
+		)
+		ORDER BY starts_at ASC
+		`
+		rows, err = s.DB.Query(
+			query,
+			trainerID,
+			startsAt.Format(time.RFC3339),
+			endsAt.Format(time.RFC3339),
+		)
+	}
+
 	if err != nil {
 		return nil, err
 	}
+
 	defer rows.Close()
 
 	for rows.Next() {

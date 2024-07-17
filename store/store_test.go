@@ -108,6 +108,18 @@ func TestGetAppointmentsByTrainerID(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, createdAppointment)
 
+	t.Run("All appointments", func(t *testing.T) {
+		appointments, err := store.GetAppointmentsByTrainerID(1, time.Time{}, time.Time{})
+		assert.NoError(t, err)
+		assert.NotNil(t, appointments)
+		assert.Len(t, appointments, 1)
+		assert.Equal(t, createdAppointment.ID, appointments[0].ID)
+		assert.Equal(t, createdAppointment.UserID, appointments[0].UserID)
+		assert.Equal(t, createdAppointment.TrainerID, appointments[0].TrainerID)
+		assert.Equal(t, createdAppointment.StartsAt, appointments[0].StartsAt)
+		assert.Equal(t, createdAppointment.EndsAt, appointments[0].EndsAt)
+	})
+
 	t.Run("Appointment within timeframe", func(t *testing.T) {
 		appointments, err := store.GetAppointmentsByTrainerID(1, appointment.StartsAt.Add(-time.Hour), appointment.EndsAt.Add(time.Hour))
 		assert.NoError(t, err)
@@ -136,6 +148,13 @@ func TestGetAppointmentsByTrainerID(t *testing.T) {
 		assert.Equal(t, createdAppointment.ID, appointments[0].ID)
 	})
 
+	t.Run("Appointment not in timeframe", func(t *testing.T) {
+		appointments, err := store.GetAppointmentsByTrainerID(1, appointment.EndsAt.Add(time.Hour), appointment.EndsAt.Add(time.Hour*2))
+		assert.NoError(t, err)
+		assert.NotNil(t, appointments)
+		assert.Len(t, appointments, 0)
+	})
+
 	t.Run("Get trainer with no appointments", func(t *testing.T) {
 		appointments, err := store.GetAppointmentsByTrainerID(2, appointment.StartsAt.Add(-time.Hour), appointment.EndsAt.Add(time.Hour))
 		assert.NoError(t, err)
@@ -143,12 +162,6 @@ func TestGetAppointmentsByTrainerID(t *testing.T) {
 		assert.Len(t, appointments, 0)
 	})
 
-	t.Run("Get trainer with no appointments within timeframe", func(t *testing.T) {
-		appointments, err := store.GetAppointmentsByTrainerID(1, appointment.EndsAt.Add(time.Hour), appointment.EndsAt.Add(time.Hour*2))
-		assert.NoError(t, err)
-		assert.NotNil(t, appointments)
-		assert.Len(t, appointments, 0)
-	})
 }
 
 func TestGetTrainerAvailability(t *testing.T) {
