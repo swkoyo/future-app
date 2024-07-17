@@ -2,6 +2,7 @@ package server
 
 import (
 	"future-app/common"
+	s "future-app/store"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -9,8 +10,9 @@ import (
 )
 
 type APIServer struct {
-	echo *echo.Echo
-	port string
+	echo  *echo.Echo
+	port  string
+	store *s.Store
 }
 
 func LoggingMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
@@ -37,7 +39,7 @@ func LoggingMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-func NewAPIServer(port string) *APIServer {
+func NewAPIServer(port string, store *s.Store) *APIServer {
 	e := echo.New()
 	common.NewLogger()
 
@@ -45,7 +47,7 @@ func NewAPIServer(port string) *APIServer {
 	e.Use(middleware.Recover())
 	e.Use(LoggingMiddleware)
 
-	s := &APIServer{port: port, echo: e}
+	s := &APIServer{port: port, echo: e, store: store}
 
 	e.GET("/health", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{"status": "OK"})
