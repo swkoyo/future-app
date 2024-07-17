@@ -2,12 +2,14 @@ package store
 
 import (
 	"database/sql"
+	"future-app/models"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 type Store struct {
-	db *sql.DB
+	DB *sql.DB
 }
 
 func NewStore() (*Store, error) {
@@ -15,7 +17,7 @@ func NewStore() (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Store{db: db}, nil
+	return &Store{DB: db}, nil
 }
 
 func (s *Store) Init() error {
@@ -33,7 +35,7 @@ func (s *Store) createAppointmentTable() error {
     );
     `
 
-	if _, err := s.db.Exec(query); err != nil {
+	if _, err := s.DB.Exec(query); err != nil {
 		return err
 	}
 
@@ -41,5 +43,33 @@ func (s *Store) createAppointmentTable() error {
 }
 
 func (s *Store) Close() {
-	s.db.Close()
+	s.DB.Close()
+}
+
+func (s *Store) CreateAppointment(data *models.Appointment) (*models.Appointment, error) {
+	query := `
+	INSERT INTO appointments (user_id, trainer_id, started_at, ended_at)
+	VALUES ($1, $2, $3, $4)
+	`
+
+	res, err := s.DB.Exec(
+		query,
+		&data.UserID,
+		&data.TrainerID,
+		(&data.StartedAt).Format(time.RFC3339),
+		(&data.EndedAt).Format(time.RFC3339),
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	id, err := res.LastInsertId()
+
+	if err != nil {
+		return nil, err
+	}
+
+	data.ID = int(id)
+	return data, nil
 }

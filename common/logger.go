@@ -32,4 +32,3 @@ func NewLogger() zerolog.Logger {
 	Logger = zerolog
 	return Logger
 }
-
